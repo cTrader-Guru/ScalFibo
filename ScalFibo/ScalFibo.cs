@@ -342,7 +342,7 @@ namespace cAlgo
                 double lowestLowAfterFirstOpen = (Positions.Length > 0) ? Info.LowestLowAfterFirstOpen : 0;
 
                 // --> Resetto le informazioni
-                Info = new Information
+                Info = new Information 
                 {
 
                     // --> Inizializzo con i vecchi dati
@@ -1026,7 +1026,7 @@ namespace cAlgo
         /// <summary>
         /// La versione del prodotto, progressivo, utilie per controllare gli aggiornamenti se viene reso disponibile sul sito ctrader.guru
         /// </summary>
-        public const string VERSION = "1.0.0";
+        public const string VERSION = "1.0.1";
 
         // --> UPDATES : VARIABILI E COSTANTI
 
@@ -1042,7 +1042,7 @@ namespace cAlgo
 
         DateTime licenzaExpire;
         CL_CTG_Licenza.LicenzaInfo licenzaInfo;
-
+        bool exitoncalculate = false;
         public Extensions.ColorNameEnum TextColor = Extensions.ColorNameEnum.Coral;
 
         // <-- VARIABILI LICENZA
@@ -1191,7 +1191,7 @@ namespace cAlgo
 
             // --> Stampo nei log la versione corrente
             Print("{0} : {1}", NAME, VERSION);
-            
+
             // --> UPDATES : CONTROLLO
 
             _checkProductUpdate();
@@ -1200,7 +1200,7 @@ namespace cAlgo
             // --> CONTROLLO LICENZA
             if (RunningMode == RunningMode.RealTime)
             {
-                CL_CTG_Licenza.LicenzaConfig licConfig = new CL_CTG_Licenza.LicenzaConfig
+                CL_CTG_Licenza.LicenzaConfig licConfig = new CL_CTG_Licenza.LicenzaConfig 
                 {
                     AccountBroker = Account.BrokerName,
                     AcconuntNumber = Account.Number.ToString()
@@ -1218,14 +1218,12 @@ namespace cAlgo
 
                         frmLogin LoginForm = new frmLogin(Account.BrokerName, Account.Number.ToString());
 
-                        LoginForm.FormClosed += delegate
-                        {
 
-                            return;
 
-                        };
+                        LoginForm.FormClosed += delegate { return; };
 
                         LoginForm.ShowDialog();
+                        exitoncalculate = true;
                         return;
 
                     }
@@ -1238,7 +1236,7 @@ namespace cAlgo
                             MessageBox.Show("Email or Password wrong, please try again", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                             _removeCookieAndLicense(licenza);
 
-
+                            exitoncalculate = true;
                             return;
 
                         }
@@ -1251,7 +1249,7 @@ namespace cAlgo
                                 if (MessageBox.Show("Not for this product, remove cookie session?", "Error", MessageBoxButtons.YesNo, MessageBoxIcon.Error) == DialogResult.Yes)
                                     _removeCookieAndLicense(licenza);
 
-
+                                exitoncalculate = true;
                                 return;
 
                             }
@@ -1264,7 +1262,7 @@ namespace cAlgo
                                     if (MessageBox.Show("Not for this account, remove cookie session?", "Error", MessageBoxButtons.YesNo, MessageBoxIcon.Error) == DialogResult.Yes)
                                         _removeCookieAndLicense(licenza);
 
-
+                                    exitoncalculate = true;
                                     return;
 
                                 }
@@ -1277,7 +1275,7 @@ namespace cAlgo
                                         if (MessageBox.Show("Expired, remove cookie session?", "Error", MessageBoxButtons.YesNo, MessageBoxIcon.Error) == DialogResult.Yes)
                                             _removeCookieAndLicense(licenza);
 
-
+                                        exitoncalculate = true;
                                         return;
 
 
@@ -1305,19 +1303,18 @@ namespace cAlgo
                                                 if (MessageBox.Show("Expired, remove cookie session?", "Error", MessageBoxButtons.YesNo, MessageBoxIcon.Error) == DialogResult.Yes)
                                                     _removeCookieAndLicense(licenza);
 
-
+                                                exitoncalculate = true;
                                                 return;
 
                                             }
 
-                                        }
-                                        catch
+                                        } catch
                                         {
 
                                             if (MessageBox.Show("Expired, remove cookie session?", "Error", MessageBoxButtons.YesNo, MessageBoxIcon.Error) == DialogResult.Yes)
                                                 _removeCookieAndLicense(licenza);
 
-
+                                            exitoncalculate = true;
                                             return;
 
                                         }
@@ -1338,11 +1335,11 @@ namespace cAlgo
 
                     }
 
-                }
-                catch (Exception exp)
+                } catch (Exception exp)
                 {
                     MessageBox.Show("Encryption issue, contact support@ctrader.guru", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     _removeCookieAndLicense(licenza);
+                    exitoncalculate = true;
 
                     Print("Debug : " + exp.Message);
 
@@ -1370,10 +1367,10 @@ namespace cAlgo
             try
             {
 
-                if (licenzaInfo.Expire.CompareTo("*") != 0)
+                if (exitoncalculate || licenzaInfo.Expire.CompareTo("*") != 0)
                 {
 
-                    if (DateTime.Compare(licenzaExpire, Server.Time) > 0)
+                    if (!exitoncalculate && DateTime.Compare(licenzaExpire, Server.Time) > 0)
                     {
 
                         // TODO not expired
@@ -1390,8 +1387,7 @@ namespace cAlgo
 
                 }
 
-            }
-            catch/*(Exception exp)*/
+            } catch            /*(Exception exp)*/
             {
 
                 Chart.DrawStaticText("Expired", string.Format("{0} : Licence expired!", NAME), VerticalAlignment.Center, API.HorizontalAlignment.Center, Color.Red);
@@ -1598,8 +1594,10 @@ namespace cAlgo
                 if (dorsale >= strategyZoneOpen && dorsale <= strategyZoneClose)
                 {
                     // --> Devo valutare meglio come fare a checkare questo flag
-                    if(!checked50) checked50 = ((LastIndex5CheckedHigh < LastIndex5CheckedLow && Bars[index5m].High >= Fibo50) || (LastIndex5CheckedHigh > LastIndex5CheckedLow && Bars[index5m].Low <= Fibo50));
-                    if(!checked50) checked38 = periodZone && ((LastIndex5CheckedHigh < LastIndex5CheckedLow && Bars[index5m].High >= Fibo38) || (LastIndex5CheckedHigh > LastIndex5CheckedLow && Bars[index5m].Low <= Fibo38));
+                    if (!checked50)
+                        checked50 = ((LastIndex5CheckedHigh < LastIndex5CheckedLow && Bars[index5m].High >= Fibo50) || (LastIndex5CheckedHigh > LastIndex5CheckedLow && Bars[index5m].Low <= Fibo50));
+                    if (!checked50)
+                        checked38 = periodZone && ((LastIndex5CheckedHigh < LastIndex5CheckedLow && Bars[index5m].High >= Fibo38) || (LastIndex5CheckedHigh > LastIndex5CheckedLow && Bars[index5m].Low <= Fibo38));
 
                     double margin = Math.Round(FiboMargin * Symbol.PipSize, Symbol.Digits);
 
@@ -1701,10 +1699,10 @@ namespace cAlgo
                 return;
 
             // --> Organizzo i dati per la richiesta degli aggiornamenti
-            Guru.API.RequestProductInfo Request = new Guru.API.RequestProductInfo
+            Guru.API.RequestProductInfo Request = new Guru.API.RequestProductInfo 
             {
 
-                MyProduct = new Guru.Product
+                MyProduct = new Guru.Product 
                 {
 
                     ID = ID,
@@ -1736,7 +1734,7 @@ namespace cAlgo
                 // --> Informo l'utente con un messaggio sul grafico e nei log del cbot
                 Chart.DrawStaticText(NAME + "Updates", updatemex, VerticalAlignment.Top, cAlgo.API.HorizontalAlignment.Left, Extensions.ColorFromEnum(TextColor));
                 Print(updatemex);
-                
+
             }
 
         }
@@ -1899,8 +1897,7 @@ namespace Guru
 
                 }
 
-            }
-            catch
+            } catch
             {
 
             }
@@ -1910,7 +1907,7 @@ namespace Guru
             {
 
                 // --> Strutturo le informazioni per la richiesta POST
-                NameValueCollection data = new NameValueCollection
+                NameValueCollection data = new NameValueCollection 
                 {
                     {
                         "account_broker",
@@ -1964,13 +1961,11 @@ namespace Guru
 
                     File.WriteAllText(fileToCheck, JsonConvert.SerializeObject(ProductInfo.LastProduct));
 
-                }
-                catch
+                } catch
                 {
                 }
 
-            }
-            catch (Exception Exp)
+            } catch (Exception Exp)
             {
 
                 // --> Qualcosa è andato storto, registro l'eccezione
