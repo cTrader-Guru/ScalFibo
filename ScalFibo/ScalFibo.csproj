@@ -36,8 +36,21 @@
     <WarningsAsErrors>CS0108,CS0162,CS0109,CS0219,CS0169,CS0628</WarningsAsErrors>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="CTG_Licenza">
+      <HintPath>..\..\..\..\cTrader GURU\dll\CTG_Licenza\CTG_Licenza\CTG_Licenza\bin\Debug\CTG_Licenza.dll</HintPath>
+    </Reference>
+    <Reference Include="cTrader-GURU">
+      <HintPath>..\..\..\..\..\GitHub\cTrader-GURU-Utility\DLL-COMPILED\cTrader-GURU.dll</HintPath>
+    </Reference>
+    <Reference Include="Encrypt">
+      <HintPath>..\..\..\..\cTrader GURU\dll\Encrypt PHP - C#\C#\Encrypt\Encrypt\bin\Debug\Encrypt.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json, Version=12.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.12.0.3\lib\net40\Newtonsoft.Json.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="System.Data" />
@@ -50,6 +63,9 @@
   <ItemGroup>
     <Compile Include="ScalFibo.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
