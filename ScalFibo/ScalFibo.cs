@@ -1026,7 +1026,7 @@ namespace cAlgo
         /// <summary>
         /// La versione del prodotto, progressivo, utilie per controllare gli aggiornamenti se viene reso disponibile sul sito ctrader.guru
         /// </summary>
-        public const string VERSION = "1.0.3";
+        public const string VERSION = "1.0.4";
 
         // --> UPDATES : VARIABILI E COSTANTI
 
@@ -1087,6 +1087,15 @@ namespace cAlgo
 
         [Parameter("Max Bars for Activation", Group = "Strategy", DefaultValue = 35, MinValue = 1, Step = 1)]
         public int MaxBarsActivation { get; set; }
+
+        [Parameter("True K", Group = "Strategy", DefaultValue = 1.5, MinValue = 0, Step = 0.1)]
+        public double TrueDiff { get; set; }
+
+        [Parameter("Time Start", Group = "Strategy", DefaultValue = 8, MinValue = 0, MaxValue = 23.59)]
+        public double OpenStrategy { get; set; }
+
+        [Parameter("Time Stop", Group = "Strategy", DefaultValue = 19, MinValue = 0, MaxValue = 23.59)]
+        public double CloseStrategy { get; set; }
 
         [Parameter("On Fibonacci Drawing?", Group = "Alerts", DefaultValue = true)]
         public bool AlertOnFibo { get; set; }
@@ -1160,8 +1169,6 @@ namespace cAlgo
 
         #region Property
 
-        private const double OpenStrategy = 8;
-        private const double CloseStrategy = 19;
         private const string YES = "✔";
         private const string NO = "❌";
         private const string ALERTON = "🔔";
@@ -1449,7 +1456,7 @@ namespace cAlgo
             DateTime afterNextCandle = nextCandle;
 
             string RangeColor = (BarsCustom[index].Close > BarsCustom[index].Open) ? ColorHigh.ToString("G") : ColorLow.ToString("G");
-            double treuLevelDiffInDigits = Math.Round(1.5 * Symbol.PipSize, Symbol.Digits);
+            double treuLevelDiffInDigits = Math.Round(TrueDiff * Symbol.PipSize, Symbol.Digits);
             bool straetgyTZone = (Bars[index5m].OpenTime >= strategyZoneOpen && Bars[index5m].OpenTime <= strategyZoneClose);
 
 
@@ -1792,7 +1799,7 @@ namespace cAlgo
             }
 
         }
-
+        
         private void _alert(string mymex)
         {
 
