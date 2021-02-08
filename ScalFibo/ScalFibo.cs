@@ -1026,7 +1026,7 @@ namespace cAlgo
         /// <summary>
         /// La versione del prodotto, progressivo, utilie per controllare gli aggiornamenti se viene reso disponibile sul sito ctrader.guru
         /// </summary>
-        public const string VERSION = "1.0.2";
+        public const string VERSION = "1.0.3";
 
         // --> UPDATES : VARIABILI E COSTANTI
 
@@ -1164,6 +1164,8 @@ namespace cAlgo
         private const double CloseStrategy = 19;
         private const string YES = "✔";
         private const string NO = "❌";
+        private const string ALERTON = "🔔";
+        private const string ALERTOFF = "🔕";
 
         private double[] BodyAverage = new double[] 
         {
@@ -1672,7 +1674,11 @@ namespace cAlgo
 
             info += string.Format(padding + "{0} Strategy Hit!\r\n", trategyEnd ? YES : NO);
             info += string.Format(padding + "... {0} Fibo 50\r\n", checked50 ? YES : NO);
-            info += string.Format(padding + "... {0} Trigger\r\n", checked38 ? YES : NO);
+            info += string.Format(padding + "... {0} Trigger\r\n\r\n", checked38 ? YES : NO);
+
+
+            info += string.Format(padding + "{0} On Fibonacci Drawing {1}\r\n", AlertOnFibo ? ALERTON : ALERTOFF, alertHitOnFibo ? YES : NO);
+            info += string.Format(padding + "{0} On Strategy Hit {1}\r\n", AlertOnStrategyHit ? ALERTON : ALERTOFF, alertHitOnStrategyHit ? YES : NO);
 
             // --> Il box info
             Chart.DrawText("ScalFibo Info", info, nextCandle, BarsCustom[index].High, Color.FromName(ColorText.ToString("G")));
