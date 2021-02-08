@@ -1026,7 +1026,7 @@ namespace cAlgo
         /// <summary>
         /// La versione del prodotto, progressivo, utilie per controllare gli aggiornamenti se viene reso disponibile sul sito ctrader.guru
         /// </summary>
-        public const string VERSION = "1.0.1";
+        public const string VERSION = "1.0.2";
 
         // --> UPDATES : VARIABILI E COSTANTI
 
@@ -1085,8 +1085,14 @@ namespace cAlgo
         [Parameter("Min Bars for Activation", Group = "Strategy", DefaultValue = 10, MinValue = 1, Step = 1)]
         public int MinBarsActivation { get; set; }
 
-        [Parameter("MAx Bars for Activation", Group = "Strategy", DefaultValue = 35, MinValue = 1, Step = 1)]
+        [Parameter("Max Bars for Activation", Group = "Strategy", DefaultValue = 35, MinValue = 1, Step = 1)]
         public int MaxBarsActivation { get; set; }
+
+        [Parameter("On Fibonacci Drawing?", Group = "Alerts", DefaultValue = true)]
+        public bool AlertOnFibo { get; set; }
+
+        [Parameter("On Strategy Hit?", Group = "Alerts", DefaultValue = true)]
+        public bool AlertOnStrategyHit { get; set; }
 
         /// <summary>
         /// Il Box, lo stile del bordo
@@ -1174,6 +1180,9 @@ namespace cAlgo
         bool trategyEnd = false;
         bool checked50 = false;
         bool checked38 = false;
+
+        bool alertHitOnFibo = false;
+        bool alertHitOnStrategyHit = false;
 
         #endregion
 
@@ -1474,6 +1483,9 @@ namespace cAlgo
                 checked50 = false;
                 checked38 = false;
 
+                alertHitOnFibo = false;
+                alertHitOnStrategyHit = false;
+
             }
 
             // --> Aggiorno i realtive levels solo se nella daily
@@ -1569,6 +1581,15 @@ namespace cAlgo
             bool canDrawFibonacci = (straetgyTZone && globalAverageActivation);
             trategyEnd = checked50 || checked38;
 
+
+            if (AlertOnStrategyHit && trategyEnd && !alertHitOnStrategyHit)
+            {
+
+                alertHitOnStrategyHit = true;
+                _alert("Strategy Hit!");
+
+            }
+
             // --> && periodZone; aggiungere anche il check a 38.2 e disegnerà fibo fino a un certo punto e non oltre
             // --> Se ci sono le condizioni disegno Fibonacci, lo ricorstruisco perchè il classico non mi fa mettere altri livelli
             if (!trategyEnd && canDrawFibonacci)
@@ -1596,7 +1617,8 @@ namespace cAlgo
                     // --> Devo valutare meglio come fare a checkare questo flag
                     if (!checked50)
                         checked50 = ((LastIndex5CheckedHigh < LastIndex5CheckedLow && Bars[index5m].High >= Fibo50) || (LastIndex5CheckedHigh > LastIndex5CheckedLow && Bars[index5m].Low <= Fibo50));
-                    if (!checked50)
+
+                    if (!checked38)
                         checked38 = periodZone && ((LastIndex5CheckedHigh < LastIndex5CheckedLow && Bars[index5m].High >= Fibo38) || (LastIndex5CheckedHigh > LastIndex5CheckedLow && Bars[index5m].Low <= Fibo38));
 
                     double margin = Math.Round(FiboMargin * Symbol.PipSize, Symbol.Digits);
@@ -1634,6 +1656,14 @@ namespace cAlgo
                     ChartTrendLine RealFibo76 = Chart.DrawTrendLine("ScalFibo Fibo 76", dorsale, Fibo76, dorsale.AddHours(1), Fibo76, Color.FromName(ColorFibo.ToString("G")), 1, LineStyle.Dots);
                     RealFibo76.IsInteractive = false;
                     Chart.DrawText("ScalFibo Fibo 76.4 txt", "76.4", dorsale.AddHours(1), Fibo76 + margin, Color.FromName(ColorFibo.ToString("G")));
+
+                    if (AlertOnFibo && !alertHitOnFibo)
+                    {
+
+                        alertHitOnFibo = true;
+                        _alert("Fibonacci retracement drawing!");
+
+                    }
 
                 }
 
@@ -1754,6 +1784,21 @@ namespace cAlgo
                 MessageBox.Show("Problem to remove cookie or old license, contact support@ctrader.guru", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
 
             }
+
+        }
+
+        private void _alert(string mymex)
+        {
+
+            if (RunningMode != RunningMode.RealTime)
+                return;
+
+            string mex = string.Format("{0} : {1} {2}", NAME, SymbolName, mymex);
+
+            // --> La popup non deve interrompere la logica delle API, apertura e chiusura
+
+            new Thread(new ThreadStart(delegate { MessageBox.Show(mex, NAME, MessageBoxButtons.OK, MessageBoxIcon.Information); })).Start();
+            Print(mex);
 
         }
 
