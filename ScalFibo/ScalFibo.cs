@@ -1026,7 +1026,7 @@ namespace cAlgo
         /// <summary>
         /// La versione del prodotto, progressivo, utilie per controllare gli aggiornamenti se viene reso disponibile sul sito ctrader.guru
         /// </summary>
-        public const string VERSION = "1.0.6";
+        public const string VERSION = "1.0.7";
 
         // --> UPDATES : VARIABILI E COSTANTI
 
@@ -1529,6 +1529,9 @@ namespace cAlgo
                         StrategyHight = Bars[index5m].High;
                         LastIndex5CheckedHigh = index5m;
 
+                        // --> Ogni volta che si riaggiorna Fibo resetto l'alert flag per l'opportunity
+                        alertHitOnTradeOppo = false;
+
                     }
 
 
@@ -1545,6 +1548,9 @@ namespace cAlgo
 
                         StrategyLow = Bars[index5m].Low;
                         LastIndex5CheckedLow = index5m;
+
+                        // --> Ogni volta che si riaggiorna Fibo resetto l'alert flag per l'opportunity
+                        alertHitOnTradeOppo = false;
 
                     }
 
