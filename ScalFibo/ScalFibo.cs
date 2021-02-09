@@ -1026,7 +1026,7 @@ namespace cAlgo
         /// <summary>
         /// La versione del prodotto, progressivo, utilie per controllare gli aggiornamenti se viene reso disponibile sul sito ctrader.guru
         /// </summary>
-        public const string VERSION = "1.0.7";
+        public const string VERSION = "1.0.8";
 
         // --> UPDATES : VARIABILI E COSTANTI
 
@@ -1467,7 +1467,7 @@ namespace cAlgo
 
             string RangeColor = (BarsCustom[index].Close > BarsCustom[index].Open) ? ColorHigh.ToString("G") : ColorLow.ToString("G");
             double treuLevelDiffInDigits = Math.Round(TrueDiff * Symbol.PipSize, Symbol.Digits);
-            bool straetgyTZone = IsLastBar && (Bars[index5m].OpenTime >= strategyZoneOpen && Bars[index5m].OpenTime <= strategyZoneClose);
+            bool straetgyTZone = (Bars[index5m].OpenTime >= strategyZoneOpen && Bars[index5m].OpenTime <= strategyZoneClose);
 
 
             // --> Disegno l'apertura e la chiusura
@@ -1604,7 +1604,7 @@ namespace cAlgo
 
             int indexForPeriodZone = (LastIndex5CheckedHigh > LastIndex5CheckedLow) ? LastIndex5CheckedHigh : LastIndex5CheckedLow;
             int currentScart = index5m - indexForPeriodZone;
-            bool periodZone = IsLastBar && currentScart >= MinBarsActivation && currentScart <= MaxBarsActivation;
+            bool periodZone = currentScart >= MinBarsActivation && currentScart <= MaxBarsActivation;
 
             info += string.Format(padding + "{0} Period Zone (>={1} && <={2})({3})\r\n\r\n", periodZone ? YES : NO, MinBarsActivation, MaxBarsActivation, currentScart);
 
