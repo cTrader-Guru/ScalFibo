@@ -1026,7 +1026,7 @@ namespace cAlgo
         /// <summary>
         /// La versione del prodotto, progressivo, utilie per controllare gli aggiornamenti se viene reso disponibile sul sito ctrader.guru
         /// </summary>
-        public const string VERSION = "1.0.4";
+        public const string VERSION = "1.0.5";
 
         // --> UPDATES : VARIABILI E COSTANTI
 
@@ -1097,10 +1097,13 @@ namespace cAlgo
         [Parameter("Time Stop", Group = "Strategy", DefaultValue = 19, MinValue = 0, MaxValue = 23.59)]
         public double CloseStrategy { get; set; }
 
-        [Parameter("On Fibonacci Drawing?", Group = "Alerts", DefaultValue = true)]
+        [Parameter("On Trade Opportunity?", Group = "Alerts", DefaultValue = true)]
+        public bool AlertOnOppo { get; set; }
+
+        [Parameter("On Fibonacci Drawing?", Group = "Alerts", DefaultValue = false)]
         public bool AlertOnFibo { get; set; }
 
-        [Parameter("On Strategy Hit?", Group = "Alerts", DefaultValue = true)]
+        [Parameter("On Strategy Hit?", Group = "Alerts", DefaultValue = false)]
         public bool AlertOnStrategyHit { get; set; }
 
         /// <summary>
@@ -1190,8 +1193,12 @@ namespace cAlgo
         bool checked50 = false;
         bool checked38 = false;
 
+        bool canAlert = false;
+
         bool alertHitOnFibo = false;
         bool alertHitOnStrategyHit = false;
+        bool alertHitOnTradeOppo = false;
+        bool fiboDrawded = false;
 
         #endregion
 
@@ -1421,6 +1428,9 @@ namespace cAlgo
 
                 _drawLevelFromCustomBar(index);
 
+                // --> Evito di mostrare l'alert all'avvio
+                if(IsLastBar)canAlert = true;
+
             } catch (Exception exp)
             {
 
@@ -1492,8 +1502,13 @@ namespace cAlgo
                 checked50 = false;
                 checked38 = false;
 
+                fiboDrawded = false;
+
+                canAlert = false;
+
                 alertHitOnFibo = false;
                 alertHitOnStrategyHit = false;
+                alertHitOnTradeOppo = false;
 
             }
 
@@ -1674,8 +1689,18 @@ namespace cAlgo
 
                     }
 
+                    fiboDrawded = true;
+
                 }
 
+
+            }
+
+            if(AlertOnOppo && !alertHitOnTradeOppo && !trategyEnd && fiboDrawded && periodZone)
+            {
+
+                alertHitOnTradeOppo = true;
+                _alert("Trade Opportunity!");
 
             }
 
@@ -1683,9 +1708,15 @@ namespace cAlgo
             info += string.Format(padding + "... {0} Fibo 50\r\n", checked50 ? YES : NO);
             info += string.Format(padding + "... {0} Trigger\r\n\r\n", checked38 ? YES : NO);
 
+            if (canAlert)
+            {
 
-            info += string.Format(padding + "{0} On Fibonacci Drawing {1}\r\n", AlertOnFibo ? ALERTON : ALERTOFF, alertHitOnFibo ? YES : NO);
-            info += string.Format(padding + "{0} On Strategy Hit {1}\r\n", AlertOnStrategyHit ? ALERTON : ALERTOFF, alertHitOnStrategyHit ? YES : NO);
+                info += string.Format(padding + "{0} On Trade Opportunity {1}\r\n", AlertOnOppo ? ALERTON : ALERTOFF, alertHitOnTradeOppo ? YES : NO);
+                info += string.Format(padding + "{0} On Fibonacci Drawing {1}\r\n", AlertOnFibo ? ALERTON : ALERTOFF, alertHitOnFibo ? YES : NO);
+                info += string.Format(padding + "{0} On Strategy Hit {1}\r\n", AlertOnStrategyHit ? ALERTON : ALERTOFF, alertHitOnStrategyHit ? YES : NO);
+
+            }
+            
 
             // --> Il box info
             Chart.DrawText("ScalFibo Info", info, nextCandle, BarsCustom[index].High, Color.FromName(ColorText.ToString("G")));
@@ -1803,7 +1834,7 @@ namespace cAlgo
         private void _alert(string mymex)
         {
 
-            if (RunningMode != RunningMode.RealTime)
+            if (!canAlert || RunningMode != RunningMode.RealTime)
                 return;
 
             string mex = string.Format("{0} : {1} {2}", NAME, SymbolName, mymex);
