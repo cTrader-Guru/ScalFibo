@@ -342,7 +342,7 @@ namespace cAlgo
                 double lowestLowAfterFirstOpen = (Positions.Length > 0) ? Info.LowestLowAfterFirstOpen : 0;
 
                 // --> Resetto le informazioni
-                Info = new Information 
+                Info = new Information
                 {
 
                     // --> Inizializzo con i vecchi dati
@@ -1026,7 +1026,7 @@ namespace cAlgo
         /// <summary>
         /// La versione del prodotto, progressivo, utilie per controllare gli aggiornamenti se viene reso disponibile sul sito ctrader.guru
         /// </summary>
-        public const string VERSION = "1.0.8";
+        public const string VERSION = "1.0.9";
 
         // --> UPDATES : VARIABILI E COSTANTI
 
@@ -1177,7 +1177,7 @@ namespace cAlgo
         private const string ALERTON = "🔔";
         private const string ALERTOFF = "🔕";
 
-        private double[] BodyAverage = new double[] 
+        private double[] BodyAverage = new double[]
         {
             0,
             0,
@@ -1212,8 +1212,13 @@ namespace cAlgo
 
             // --> Se il timeframe è superiore o uguale al corrente devo uscire
             if (TimeFrame != TimeFrame.Minute5)
-                Chart.DrawStaticText("Alert", string.Format("{0} : USE THIS INDICATOR ONLY WITH TIMEFRAME 5m", NAME.ToUpper()), VerticalAlignment.Center, API.HorizontalAlignment.Center, Color.Red);
+            {
 
+                _alertChart("USE THIS INDICATOR ONLY WITH TIMEFRAME 5 MINUTE");
+                exitoncalculate = true;
+                return;
+
+            }
             // --> Stampo nei log la versione corrente
             Print("{0} : {1}", NAME, VERSION);
 
@@ -1221,11 +1226,10 @@ namespace cAlgo
 
             _checkProductUpdate();
 
-            // <-- Versione non standard
             // --> CONTROLLO LICENZA
             if (RunningMode == RunningMode.RealTime)
             {
-                CL_CTG_Licenza.LicenzaConfig licConfig = new CL_CTG_Licenza.LicenzaConfig 
+                CL_CTG_Licenza.LicenzaConfig licConfig = new CL_CTG_Licenza.LicenzaConfig
                 {
                     AccountBroker = Account.BrokerName,
                     AcconuntNumber = Account.Number.ToString()
@@ -1236,15 +1240,12 @@ namespace cAlgo
                 try
                 {
 
-                    licenzaInfo = licenza.GetLicenza();
+                    licenzaInfo = licenza.GetLicenza(true);
 
-                    if (licenzaInfo == null)
+                    if (licenzaInfo == null || licenzaInfo.ErrorProc == 2 || licenzaInfo.ErrorProc == 3)
                     {
 
                         frmLogin LoginForm = new frmLogin(Account.BrokerName, Account.Number.ToString());
-
-
-
                         LoginForm.FormClosed += delegate { return; };
 
                         LoginForm.ShowDialog();
@@ -1255,12 +1256,36 @@ namespace cAlgo
                     else
                     {
 
-                        if (!licenzaInfo.Login)
+                        // --> Ho inizializzato perchè non voglio la chiamata al server
+                        if (licenzaInfo.Product == "")
                         {
 
-                            MessageBox.Show("Email or Password wrong, please try again", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                            _removeCookieAndLicense(licenza);
+                            
+                            if (licenzaInfo.ErrorProc == 4)
+                            {
 
+                                _alertChart("Problem with server, please try again!".ToUpper());
+                                _removeCookieAndLicense(licenza);
+                                exitoncalculate = true;
+                                return;
+
+                            }
+                            else
+                            {
+
+                                _alertChart("LICENSE NOT FOUND, please try again!".ToUpper());
+                                _removeCookieAndLicense(licenza);
+                                exitoncalculate = true;
+                                return;
+
+                            }
+
+                        }
+                        else if (!licenzaInfo.Login)
+                        {
+
+                            _alertChart("Email or Password wrong, please try again".ToUpper());
+                            _removeCookieAndLicense(licenza);
                             exitoncalculate = true;
                             return;
 
@@ -1333,7 +1358,8 @@ namespace cAlgo
 
                                             }
 
-                                        } catch
+                                        }
+                                        catch
                                         {
 
                                             if (MessageBox.Show("Expired, remove cookie session?", "Error", MessageBoxButtons.YesNo, MessageBoxIcon.Error) == DialogResult.Yes)
@@ -1360,10 +1386,12 @@ namespace cAlgo
 
                     }
 
-                } catch (Exception exp)
+                }
+                catch (Exception exp)
                 {
+
                     MessageBox.Show("Encryption issue, contact support@ctrader.guru", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    _removeCookieAndLicense(licenza);
+                    licenza.RemoveLicense();
                     exitoncalculate = true;
 
                     Print("Debug : " + exp.Message);
@@ -1388,39 +1416,48 @@ namespace cAlgo
                 return;
 
             // --> CONTROLLO LICENZA
-
-            try
+            if (RunningMode == RunningMode.RealTime)
             {
 
-                if (exitoncalculate || licenzaInfo.Expire.CompareTo("*") != 0)
+                try
                 {
 
-                    if (!exitoncalculate && DateTime.Compare(licenzaExpire, Server.Time) > 0)
+                    if (exitoncalculate)
                     {
-
-                        // TODO not expired
-
-                    }
-                    else
-                    {
-
-                        Chart.DrawStaticText("Expired", string.Format("{0} : Licence expired!", NAME), VerticalAlignment.Center, API.HorizontalAlignment.Center, Color.Red);
 
                         return;
 
                     }
+                    else if (licenzaInfo.Expire.CompareTo("*") != 0)
+                    {
+
+                        if (DateTime.Compare(licenzaExpire, Server.Time) > 0)
+                        {
+
+                            // TODO not expired
+
+                        }
+                        else
+                        {
+                            _alertChart("Expired");
+                            return;
+
+                        }
+
+                    }
+
+                }
+                catch
+                {
+
+                    Chart.DrawStaticText("Expired", string.Format("{0} : Licence expired!", NAME), VerticalAlignment.Center, API.HorizontalAlignment.Center, Color.Red);
+
+                    return;
 
                 }
 
-            } catch            /*(Exception exp)*/
-            {
-
-                Chart.DrawStaticText("Expired", string.Format("{0} : Licence expired!", NAME), VerticalAlignment.Center, API.HorizontalAlignment.Center, Color.Red);
-                //Print(exp);
-                return;
 
             }
-
             // <-- CONTROLLO LICENZA
 
             try
@@ -1429,9 +1466,11 @@ namespace cAlgo
                 _drawLevelFromCustomBar(index);
 
                 // --> Evito di mostrare l'alert all'avvio
-                if(IsLastBar)canAlert = true;
+                if (IsLastBar)
+                    canAlert = true;
 
-            } catch (Exception exp)
+            }
+            catch (Exception exp)
             {
 
                 Chart.DrawStaticText("Alert", string.Format("{0} : error, {1}", NAME, exp), VerticalAlignment.Center, API.HorizontalAlignment.Center, Color.Red);
@@ -1702,7 +1741,7 @@ namespace cAlgo
 
             }
 
-            if(AlertOnOppo && !alertHitOnTradeOppo && !trategyEnd && fiboDrawded && periodZone)
+            if (AlertOnOppo && !alertHitOnTradeOppo && !trategyEnd && fiboDrawded && periodZone)
             {
 
                 alertHitOnTradeOppo = true;
@@ -1722,7 +1761,7 @@ namespace cAlgo
                 info += string.Format(padding + "{0} On Strategy Hit {1}\r\n", AlertOnStrategyHit ? ALERTON : ALERTOFF, alertHitOnStrategyHit ? YES : NO);
 
             }
-            
+
 
             // --> Il box info
             Chart.DrawText("ScalFibo Info", info, nextCandle, BarsCustom[index].High, Color.FromName(ColorText.ToString("G")));
@@ -1735,7 +1774,7 @@ namespace cAlgo
             Bars BarsDaily = MarketData.GetBars(TimeFrame.Daily);
 
             if (BarsDaily.Count < AveragePeriod)
-                return new double[] 
+                return new double[]
                 {
                     0,
                     0,
@@ -1759,7 +1798,7 @@ namespace cAlgo
             double average = Math.Round((total / count) / Symbol.PipSize, 2);
 
             // --> Restituisco il numero di pips
-            return new double[] 
+            return new double[]
             {
                 average,
                 count,
@@ -1779,10 +1818,10 @@ namespace cAlgo
                 return;
 
             // --> Organizzo i dati per la richiesta degli aggiornamenti
-            Guru.API.RequestProductInfo Request = new Guru.API.RequestProductInfo 
+            Guru.API.RequestProductInfo Request = new Guru.API.RequestProductInfo
             {
 
-                MyProduct = new Guru.Product 
+                MyProduct = new Guru.Product
                 {
 
                     ID = ID,
@@ -1822,21 +1861,24 @@ namespace cAlgo
         private void _removeCookieAndLicense(CL_CTG_Licenza licenza)
         {
 
-            if (licenza.RemoveCookie() && licenza.RemoveLicense())
-            {
-
-                MessageBox.Show("Session cookie deleted!", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
-
-            }
-            else
-            {
-
-                MessageBox.Show("Problem to remove cookie or old license, contact support@ctrader.guru", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-
-            }
+            licenza.RemoveCookie();
+            licenza.RemoveLicense();
 
         }
-        
+
+        private void _alertChart(string mymex)
+        {
+
+            if (RunningMode != RunningMode.RealTime)
+                return;
+
+            string mex = string.Format("{0} : {1}", NAME.ToUpper(), mymex);
+
+            Chart.DrawStaticText("alert", mex, VerticalAlignment.Center, API.HorizontalAlignment.Center, Color.Red);
+            Print(mex);
+
+        }
+
         private void _alert(string mymex)
         {
 
@@ -1844,8 +1886,6 @@ namespace cAlgo
                 return;
 
             string mex = string.Format("{0} : {1} {2}", NAME, SymbolName, mymex);
-
-            // --> La popup non deve interrompere la logica delle API, apertura e chiusura
 
             new Thread(new ThreadStart(delegate { MessageBox.Show(mex, NAME, MessageBoxButtons.OK, MessageBoxIcon.Information); })).Start();
             Print(mex);
@@ -1992,7 +2032,8 @@ namespace Guru
 
                 }
 
-            } catch
+            }
+            catch
             {
 
             }
@@ -2002,7 +2043,7 @@ namespace Guru
             {
 
                 // --> Strutturo le informazioni per la richiesta POST
-                NameValueCollection data = new NameValueCollection 
+                NameValueCollection data = new NameValueCollection
                 {
                     {
                         "account_broker",
@@ -2056,11 +2097,13 @@ namespace Guru
 
                     File.WriteAllText(fileToCheck, JsonConvert.SerializeObject(ProductInfo.LastProduct));
 
-                } catch
+                }
+                catch
                 {
                 }
 
-            } catch (Exception Exp)
+            }
+            catch (Exception Exp)
             {
 
                 // --> Qualcosa è andato storto, registro l'eccezione
