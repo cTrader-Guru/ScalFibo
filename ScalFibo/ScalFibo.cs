@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using cAlgo.API.Indicators;
 using cAlgo.Indicators;
+using System.Diagnostics;
 
 // --> LICENZA : RIFERIMENTI
 
@@ -22,6 +23,7 @@ using System.Collections.Specialized;
 using System.Text.RegularExpressions;
 using System.Net;
 using System.Text;
+using Button = cAlgo.API.Button;
 
 // <-- UPDATES : RIFERIMENTI
 
@@ -342,7 +344,7 @@ namespace cAlgo
                 double lowestLowAfterFirstOpen = (Positions.Length > 0) ? Info.LowestLowAfterFirstOpen : 0;
 
                 // --> Resetto le informazioni
-                Info = new Information
+                Info = new Information 
                 {
 
                     // --> Inizializzo con i vecchi dati
@@ -1026,7 +1028,7 @@ namespace cAlgo
         /// <summary>
         /// La versione del prodotto, progressivo, utilie per controllare gli aggiornamenti se viene reso disponibile sul sito ctrader.guru
         /// </summary>
-        public const string VERSION = "1.0.9";
+        public const string VERSION = "1.1.0";
 
         // --> UPDATES : VARIABILI E COSTANTI
 
@@ -1041,10 +1043,11 @@ namespace cAlgo
         readonly string endpoint = "https://ctrader.guru/_checkpoint_/";
 
         DateTime licenzaExpire;
-        CL_CTG_Licenza.LicenzaInfo licenzaInfo;
+        CL_CTG_Licenza licenza = null;
+        CL_CTG_Licenza.LicenzaInfo licenzaInfo = null;
         bool exitoncalculate = false;
         public Extensions.ColorNameEnum TextColor = Extensions.ColorNameEnum.Coral;
-
+        private ControlBase DrawingDialog;
         // <-- VARIABILI LICENZA
 
         #endregion
@@ -1177,7 +1180,7 @@ namespace cAlgo
         private const string ALERTON = "🔔";
         private const string ALERTOFF = "🔕";
 
-        private double[] BodyAverage = new double[]
+        private double[] BodyAverage = new double[] 
         {
             0,
             0,
@@ -1219,189 +1222,28 @@ namespace cAlgo
                 return;
 
             }
-            // --> Stampo nei log la versione corrente
-            Print("{0} : {1}", NAME, VERSION);
-
-            // --> UPDATES : CONTROLLO
-
-            _checkProductUpdate();
 
             // --> CONTROLLO LICENZA
-            if (RunningMode == RunningMode.RealTime)
+
+            CL_CTG_Licenza.LicenzaConfig licConfig = new CL_CTG_Licenza.LicenzaConfig
             {
-                CL_CTG_Licenza.LicenzaConfig licConfig = new CL_CTG_Licenza.LicenzaConfig
-                {
-                    AccountBroker = Account.BrokerName,
-                    AcconuntNumber = Account.Number.ToString()
-                };
+                AccountBroker = Account.BrokerName,
+                AcconuntNumber = Account.Number.ToString()
+            };
 
-                CL_CTG_Licenza licenza = new CL_CTG_Licenza(endpoint, licConfig, productName);
+            licenza = new CL_CTG_Licenza(endpoint, licConfig, productName);
 
-                try
-                {
-
-                    licenzaInfo = licenza.GetLicenza(true);
-
-                    if (licenzaInfo == null || licenzaInfo.ErrorProc == 2 || licenzaInfo.ErrorProc == 3)
-                    {
-
-                        frmLogin LoginForm = new frmLogin(Account.BrokerName, Account.Number.ToString());
-                        LoginForm.FormClosed += delegate { return; };
-
-                        LoginForm.ShowDialog();
-                        exitoncalculate = true;
-                        return;
-
-                    }
-                    else
-                    {
-
-                        // --> Ho inizializzato perchè non voglio la chiamata al server
-                        if (licenzaInfo.Product == "")
-                        {
-
-                            
-                            if (licenzaInfo.ErrorProc == 4)
-                            {
-
-                                _alertChart("Problem with server, please try again!".ToUpper());
-                                _removeCookieAndLicense(licenza);
-                                exitoncalculate = true;
-                                return;
-
-                            }
-                            else
-                            {
-
-                                _alertChart("LICENSE NOT FOUND, please try again!".ToUpper());
-                                _removeCookieAndLicense(licenza);
-                                exitoncalculate = true;
-                                return;
-
-                            }
-
-                        }
-                        else if (!licenzaInfo.Login)
-                        {
-
-                            _alertChart("Email or Password wrong, please try again".ToUpper());
-                            _removeCookieAndLicense(licenza);
-                            exitoncalculate = true;
-                            return;
-
-                        }
-                        else
-                        {
-
-                            if (licenzaInfo.Product.CompareTo(productName.ToUpper()) != 0)
-                            {
-
-                                if (MessageBox.Show("Not for this product, remove cookie session?", "Error", MessageBoxButtons.YesNo, MessageBoxIcon.Error) == DialogResult.Yes)
-                                    _removeCookieAndLicense(licenza);
-
-                                exitoncalculate = true;
-                                return;
-
-                            }
-                            else
-                            {
-
-                                if ((licenzaInfo.AccountBroker.CompareTo("*") != 0 && licenzaInfo.AccountBroker.CompareTo(Account.BrokerName) != 0) || (licenzaInfo.AccountNumber.CompareTo("*") != 0 && licenzaInfo.AccountNumber.CompareTo(Account.Number.ToString()) != 0))
-                                {
-
-                                    if (MessageBox.Show("Not for this account, remove cookie session?", "Error", MessageBoxButtons.YesNo, MessageBoxIcon.Error) == DialogResult.Yes)
-                                        _removeCookieAndLicense(licenza);
-
-                                    exitoncalculate = true;
-                                    return;
-
-                                }
-                                else
-                                {
-
-                                    if (licenzaInfo.Expire == null || licenzaInfo.Expire.Length < 1)
-                                    {
-
-                                        if (MessageBox.Show("Expired, remove cookie session?", "Error", MessageBoxButtons.YesNo, MessageBoxIcon.Error) == DialogResult.Yes)
-                                            _removeCookieAndLicense(licenza);
-
-                                        exitoncalculate = true;
-                                        return;
-
-
-                                    }
-                                    else if (licenzaInfo.Expire.CompareTo("*") != 0)
-                                    {
-
-                                        try
-                                        {
-
-                                            String[] substringsExpire = licenzaInfo.Expire.Split(',');
-
-                                            licenzaExpire = new DateTime(Int32.Parse(substringsExpire[0].Trim()), Int32.Parse(substringsExpire[1].Trim()), Int32.Parse(substringsExpire[2].Trim()), Int32.Parse(substringsExpire[3].Trim()), Int32.Parse(substringsExpire[4].Trim()), Int32.Parse(substringsExpire[5].Trim()));
-
-
-                                            if (DateTime.Compare(licenzaExpire, Server.Time) > 0)
-                                            {
-
-                                                Print("Expire : " + licenzaExpire.ToString());
-
-                                            }
-                                            else
-                                            {
-
-                                                if (MessageBox.Show("Expired, remove cookie session?", "Error", MessageBoxButtons.YesNo, MessageBoxIcon.Error) == DialogResult.Yes)
-                                                    _removeCookieAndLicense(licenza);
-
-                                                exitoncalculate = true;
-                                                return;
-
-                                            }
-
-                                        }
-                                        catch
-                                        {
-
-                                            if (MessageBox.Show("Expired, remove cookie session?", "Error", MessageBoxButtons.YesNo, MessageBoxIcon.Error) == DialogResult.Yes)
-                                                _removeCookieAndLicense(licenza);
-
-                                            exitoncalculate = true;
-                                            return;
-
-                                        }
-
-                                    }
-                                    else
-                                    {
-
-                                        Print("Lifetime");
-
-                                    }
-
-                                }
-
-                            }
-
-                        }
-
-                    }
-
-                }
-                catch (Exception exp)
-                {
-
-                    MessageBox.Show("Encryption issue, contact support@ctrader.guru", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    licenza.RemoveLicense();
-                    exitoncalculate = true;
-
-                    Print("Debug : " + exp.Message);
-
-                    return;
-
-                }
-
-            }
+            _checkLicense();
             // <-- CONTROLLO LICENZA
+
+            if (exitoncalculate) return;
+
+            // --> UPDATES : CONTROLLO
+            _checkProductUpdate();
+            // <-- UPDATES
+
+            // --> Stampo nei log la versione corrente
+            Print("{0} : {1}", NAME, VERSION);
 
         }
 
@@ -1411,55 +1253,70 @@ namespace cAlgo
         /// <param name="index">L'indice della candela in elaborazione</param>
         public override void Calculate(int index)
         {
-
-            if (TimeFrame != TimeFrame.Minute5)
+            
+            if (exitoncalculate || TimeFrame != TimeFrame.Minute5)
                 return;
 
-            // --> CONTROLLO LICENZA
-            if (RunningMode == RunningMode.RealTime)
-            {
+            // --> Controllo della licenza funzionante al 100% ma lo disabilito per guadagnare risorse
+            /*
+            if (RunningMode == RunningMode.RealTime) {
 
-                try
+                if (licenzaInfo.Expire == null || licenzaInfo.Expire.Length < 1)
                 {
 
-                    if (exitoncalculate)
+                    _alertChart("Expired", false);
+
+                    licenza.RemoveLicense();
+                    exitoncalculate = true;
+                    return;
+
+
+                }
+                else if (licenzaInfo.Expire.CompareTo("*") != 0)
+                {
+
+                    try
                     {
 
-                        return;
+                        String[] substringsExpire = licenzaInfo.Expire.Split(',');
 
-                    }
-                    else if (licenzaInfo.Expire.CompareTo("*") != 0)
-                    {
+                        licenzaExpire = new DateTime(Int32.Parse(substringsExpire[0].Trim()), Int32.Parse(substringsExpire[1].Trim()), Int32.Parse(substringsExpire[2].Trim()), Int32.Parse(substringsExpire[3].Trim()), Int32.Parse(substringsExpire[4].Trim()), Int32.Parse(substringsExpire[5].Trim()));
+
 
                         if (DateTime.Compare(licenzaExpire, Server.Time) > 0)
                         {
 
-                            // TODO not expired
+                            exitoncalculate = false;
 
                         }
                         else
                         {
-                            _alertChart("Expired");
+
+                            
+                            _alertChart("Expired", false);
+
+                            licenza.RemoveLicense();
+                            exitoncalculate = true;
                             return;
 
                         }
 
                     }
+                    catch
+                    {
+
+                        _alertChart("Error on check license", false);
+
+                        licenza.RemoveLicense();
+                        exitoncalculate = true;
+                        return;
+
+                    }
 
                 }
-                catch
-                {
-
-                    Chart.DrawStaticText("Expired", string.Format("{0} : Licence expired!", NAME), VerticalAlignment.Center, API.HorizontalAlignment.Center, Color.Red);
-
-                    return;
-
-                }
-
 
             }
-            // <-- CONTROLLO LICENZA
-
+            */
             try
             {
 
@@ -1469,8 +1326,7 @@ namespace cAlgo
                 if (IsLastBar)
                     canAlert = true;
 
-            }
-            catch (Exception exp)
+            } catch (Exception exp)
             {
 
                 Chart.DrawStaticText("Alert", string.Format("{0} : error, {1}", NAME, exp), VerticalAlignment.Center, API.HorizontalAlignment.Center, Color.Red);
@@ -1774,7 +1630,7 @@ namespace cAlgo
             Bars BarsDaily = MarketData.GetBars(TimeFrame.Daily);
 
             if (BarsDaily.Count < AveragePeriod)
-                return new double[]
+                return new double[] 
                 {
                     0,
                     0,
@@ -1798,7 +1654,7 @@ namespace cAlgo
             double average = Math.Round((total / count) / Symbol.PipSize, 2);
 
             // --> Restituisco il numero di pips
-            return new double[]
+            return new double[] 
             {
                 average,
                 count,
@@ -1807,9 +1663,6 @@ namespace cAlgo
 
         }
 
-        /// <summary>
-        /// Effettua un controllo sul sito ctrader.guru per mezzo delle API per verificare la presenza di aggiornamenti, solo in realtime
-        /// </summary>
         private void _checkProductUpdate()
         {
 
@@ -1818,10 +1671,10 @@ namespace cAlgo
                 return;
 
             // --> Organizzo i dati per la richiesta degli aggiornamenti
-            Guru.API.RequestProductInfo Request = new Guru.API.RequestProductInfo
+            Guru.API.RequestProductInfo Request = new Guru.API.RequestProductInfo 
             {
 
-                MyProduct = new Guru.Product
+                MyProduct = new Guru.Product 
                 {
 
                     ID = ID,
@@ -1858,6 +1711,250 @@ namespace cAlgo
 
         }
 
+        private void _checkLicense()
+        {
+                        
+            if (RunningMode != RunningMode.RealTime) return;
+            
+            try
+            {
+
+                // --> Controllo la licenza solo dal file
+                licenzaInfo = licenza.GetLicenzaFromFile();
+
+                // --> Se non ho il login chiedo di generarlo
+                if (!licenzaInfo.Login)
+                {
+
+                    _createButtonLogin();
+                    exitoncalculate = true;
+                    return;
+
+                }
+                else
+                {
+                    
+                    if (licenzaInfo.Product.CompareTo(productName.ToUpper()) != 0)
+                    {
+
+                        if (MessageBox.Show("Not for this product, remove cookie session?", "Error", MessageBoxButtons.YesNo, MessageBoxIcon.Error) == DialogResult.Yes)
+                            _removeCookieAndLicense(licenza);
+
+                        exitoncalculate = true;
+                        return;
+
+                    }
+                    else
+                    {
+
+                        if ((licenzaInfo.AccountBroker.CompareTo("*") != 0 && licenzaInfo.AccountBroker.CompareTo(Account.BrokerName) != 0) || (licenzaInfo.AccountNumber.CompareTo("*") != 0 && licenzaInfo.AccountNumber.CompareTo(Account.Number.ToString()) != 0))
+                        {
+
+                            if (MessageBox.Show("Not for this account, remove cookie session?", "Error", MessageBoxButtons.YesNo, MessageBoxIcon.Error) == DialogResult.Yes)
+                                _removeCookieAndLicense(licenza);
+
+                            exitoncalculate = true;
+                            return;
+
+                        }
+                        else
+                        {
+
+                            if (licenzaInfo.Expire == null || licenzaInfo.Expire.Length < 1)
+                            {
+
+                                if (MessageBox.Show("Expired, remove cookie session?", "Error", MessageBoxButtons.YesNo, MessageBoxIcon.Error) == DialogResult.Yes)
+                                    _removeCookieAndLicense(licenza);
+
+                                exitoncalculate = true;
+                                return;
+
+
+                            }
+                            else if (licenzaInfo.Expire.CompareTo("*") != 0)
+                            {
+
+                                try
+                                {
+
+                                    String[] substringsExpire = licenzaInfo.Expire.Split(',');
+
+                                    licenzaExpire = new DateTime(Int32.Parse(substringsExpire[0].Trim()), Int32.Parse(substringsExpire[1].Trim()), Int32.Parse(substringsExpire[2].Trim()), Int32.Parse(substringsExpire[3].Trim()), Int32.Parse(substringsExpire[4].Trim()), Int32.Parse(substringsExpire[5].Trim()));
+
+
+                                    if (DateTime.Compare(licenzaExpire, Server.Time) > 0)
+                                    {
+
+                                        Print("Expire : " + licenzaExpire.ToString() + " (server : " + Server.Time.ToString() + ")");
+                                        exitoncalculate = false;
+
+                                    }
+                                    else
+                                    {
+
+                                        if (MessageBox.Show("Expired (" + licenzaExpire + "), remove cookie session?", "Error", MessageBoxButtons.YesNo, MessageBoxIcon.Error) == DialogResult.Yes)
+                                            _removeCookieAndLicense(licenza);
+
+                                        exitoncalculate = true;
+                                        return;
+
+                                    }
+
+                                }
+                                catch
+                                {
+
+                                    if (MessageBox.Show("Expired, remove cookie session?", "Error", MessageBoxButtons.YesNo, MessageBoxIcon.Error) == DialogResult.Yes)
+                                        _removeCookieAndLicense(licenza);
+
+                                    exitoncalculate = true;
+                                    return;
+
+                                }
+
+                            }
+                            else
+                            {
+
+                                Print("Lifetime");
+                                exitoncalculate = false;
+                            }
+
+                        }
+
+                    }
+
+                }
+
+            }
+            catch (Exception exp)
+            {
+
+                MessageBox.Show("Encryption issue, contact support@ctrader.guru", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                licenza.RemoveLicense();
+                exitoncalculate = true;
+
+                Print("Debug : " + exp.Message);
+
+                return;
+
+            }
+
+        }
+
+        private void _createButtonLogin()
+        {
+            
+            if (RunningMode != RunningMode.RealTime) return;
+
+            StackPanel stackPanel = new StackPanel 
+            {
+                VerticalAlignment = VerticalAlignment.Center,
+                HorizontalAlignment = API.HorizontalAlignment.Center,
+                Orientation = API.Orientation.Vertical,
+                IsVisible = false,
+                Width = 200,
+                BackgroundColor = Color.Red,
+                Margin = new Thickness(10, 10, 10, 10)
+            };
+
+            Button btnLogin = new Button 
+            {
+                Text = "CTRADER GURU - LOGIN",
+                BackgroundColor = Color.Red,
+                ForegroundColor = Color.White,
+                Top = 10,
+                CornerRadius = 0,
+                HorizontalContentAlignment = API.HorizontalAlignment.Center
+
+            };
+            btnLogin.Click += delegate
+            {
+
+                DrawingDialog.IsVisible = false;
+
+                System.Windows.Forms.Application.DoEvents();
+                Thread.Sleep(1000);
+
+                _createLicense();
+
+            };
+
+            stackPanel.AddChild(btnLogin);
+
+            DrawingDialog = stackPanel;
+            Chart.AddControl(DrawingDialog);
+
+            DrawingDialog.IsVisible = true;
+
+        }
+
+        private void _createLicense()
+        {
+            
+            if (RunningMode != RunningMode.RealTime) return;
+
+            // --> Chiedo al server con i cookie
+            licenzaInfo = licenza.GetLicenzaFromServer();
+
+            // --> Ci sono problemi con i cookie
+            if (licenzaInfo.ErrorProc == 2 || licenzaInfo.ErrorProc == 3 || licenzaInfo.Login == false)
+            {
+                // --> Rimuovo i cookie comunque
+                licenza.RemoveCookie();
+                licenza.RemoveLicense();
+
+
+                // --> Li rigenero chiedendo il login, faccio attenzione ad altri processi
+                Process[] processlist = Process.GetProcesses();
+                bool finded = false;
+
+                foreach (Process process in processlist)
+                {
+
+                    if (!String.IsNullOrEmpty(process.MainWindowTitle) && process.MainWindowTitle.ToUpper().CompareTo("CTRADER GURU - LOGIN") == 0)
+                    {
+
+                        finded = true;
+                        break;
+
+                    }
+
+                }
+
+                if (!finded)
+                {
+
+
+                    frmLogin LoginForm = new frmLogin(Account.BrokerName, Account.Number.ToString());
+                    LoginForm.FormClosed += delegate
+                    {
+
+                        licenzaInfo = licenza.GetLicenzaFromServer();
+                        _checkLicense();
+
+                    };
+
+                    LoginForm.ShowDialog();
+
+                }
+                else
+                {
+
+                    _alertChart("Others are logging in, waiting...");
+                }
+
+                exitoncalculate = true;
+
+            }
+            else {
+
+                _checkLicense();
+
+            }
+
+        }
+
         private void _removeCookieAndLicense(CL_CTG_Licenza licenza)
         {
 
@@ -1866,7 +1963,7 @@ namespace cAlgo
 
         }
 
-        private void _alertChart(string mymex)
+        private void _alertChart(string mymex, bool withPrint = true)
         {
 
             if (RunningMode != RunningMode.RealTime)
@@ -1875,7 +1972,8 @@ namespace cAlgo
             string mex = string.Format("{0} : {1}", NAME.ToUpper(), mymex);
 
             Chart.DrawStaticText("alert", mex, VerticalAlignment.Center, API.HorizontalAlignment.Center, Color.Red);
-            Print(mex);
+            if (withPrint)
+                Print(mex);
 
         }
 
@@ -2032,8 +2130,7 @@ namespace Guru
 
                 }
 
-            }
-            catch
+            } catch
             {
 
             }
@@ -2043,7 +2140,7 @@ namespace Guru
             {
 
                 // --> Strutturo le informazioni per la richiesta POST
-                NameValueCollection data = new NameValueCollection
+                NameValueCollection data = new NameValueCollection 
                 {
                     {
                         "account_broker",
@@ -2097,13 +2194,11 @@ namespace Guru
 
                     File.WriteAllText(fileToCheck, JsonConvert.SerializeObject(ProductInfo.LastProduct));
 
-                }
-                catch
+                } catch
                 {
                 }
 
-            }
-            catch (Exception Exp)
+            } catch (Exception Exp)
             {
 
                 // --> Qualcosa è andato storto, registro l'eccezione
