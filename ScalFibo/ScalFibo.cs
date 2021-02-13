@@ -5,27 +5,23 @@ using System.IO;
 using System;
 using System.Windows.Forms;
 using cAlgo.API.Internals;
-using System.Collections.Generic;
-using System.Linq;
-using cAlgo.API.Indicators;
-using cAlgo.Indicators;
-using System.Diagnostics;
 
-// --> LICENZA : RIFERIMENTI
-
-using NM_CTG_Licenza;
-
-// <-- LICENZA : RIFERIMENTI
-
-// --> UPDATES : RIFERIMENTI
+#region UPDATE : USING
 
 using System.Collections.Specialized;
 using System.Text.RegularExpressions;
 using System.Net;
 using System.Text;
-using Button = cAlgo.API.Button;
 
-// <-- UPDATES : RIFERIMENTI
+#endregion
+
+#region LICENZA : USING
+
+using NM_CTG_Licenza;
+using Button = cAlgo.API.Button;
+using System.Diagnostics;
+
+#endregion
 
 
 namespace cAlgo
@@ -344,7 +340,7 @@ namespace cAlgo
                 double lowestLowAfterFirstOpen = (Positions.Length > 0) ? Info.LowestLowAfterFirstOpen : 0;
 
                 // --> Resetto le informazioni
-                Info = new Information 
+                Info = new Information
                 {
 
                     // --> Inizializzo con i vecchi dati
@@ -1028,16 +1024,18 @@ namespace cAlgo
         /// <summary>
         /// La versione del prodotto, progressivo, utilie per controllare gli aggiornamenti se viene reso disponibile sul sito ctrader.guru
         /// </summary>
-        public const string VERSION = "1.1.0";
+        public const string VERSION = "1.1.1";
 
-        // --> UPDATES : VARIABILI E COSTANTI
+        #endregion
+
+        #region UPDATE : VARIABILI
 
         private const string UPDATESPAGE = "https://ctrader.guru/product/scalfibo-indicator/";
         private const string LICENSEPAGE = "https://ctrader.guru/licenze/";
 
-        // <-- UPDATES : VARIABILI E COSTANTI
+        #endregion
 
-        // --> VARIABILI LICENZA
+        #region LICENZA : VARIABILI
 
         string productName = NAME;
         readonly string endpoint = "https://ctrader.guru/_checkpoint_/";
@@ -1048,7 +1046,6 @@ namespace cAlgo
         bool exitoncalculate = false;
         public Extensions.ColorNameEnum TextColor = Extensions.ColorNameEnum.Coral;
         private ControlBase DrawingDialog;
-        // <-- VARIABILI LICENZA
 
         #endregion
 
@@ -1180,7 +1177,7 @@ namespace cAlgo
         private const string ALERTON = "🔔";
         private const string ALERTOFF = "🔕";
 
-        private double[] BodyAverage = new double[] 
+        private double[] BodyAverage = new double[]
         {
             0,
             0,
@@ -1223,7 +1220,7 @@ namespace cAlgo
 
             }
 
-            // --> CONTROLLO LICENZA
+            #region LICENZA : INIT CHECK
 
             CL_CTG_Licenza.LicenzaConfig licConfig = new CL_CTG_Licenza.LicenzaConfig
             {
@@ -1234,13 +1231,17 @@ namespace cAlgo
             licenza = new CL_CTG_Licenza(endpoint, licConfig, productName);
 
             _checkLicense();
-            // <-- CONTROLLO LICENZA
 
-            if (exitoncalculate) return;
+            if (exitoncalculate)
+                return;
 
-            // --> UPDATES : CONTROLLO
+            #endregion
+
+            #region UPDATE : INIT CHECK
+
             _checkProductUpdate();
-            // <-- UPDATES
+
+            #endregion
 
             // --> Stampo nei log la versione corrente
             Print("{0} : {1}", NAME, VERSION);
@@ -1253,70 +1254,75 @@ namespace cAlgo
         /// <param name="index">L'indice della candela in elaborazione</param>
         public override void Calculate(int index)
         {
-            
+
             if (exitoncalculate || TimeFrame != TimeFrame.Minute5)
                 return;
 
+            #region LICENZA LOOP CHECK
+
             // --> Controllo della licenza funzionante al 100% ma lo disabilito per guadagnare risorse
             /*
-            if (RunningMode == RunningMode.RealTime) {
+if (RunningMode == RunningMode.RealTime) {
 
-                if (licenzaInfo.Expire == null || licenzaInfo.Expire.Length < 1)
-                {
+    if (licenzaInfo.Expire == null || licenzaInfo.Expire.Length < 1)
+    {
 
-                    _alertChart("Expired", false);
+        _alertChart("Expired", false);
 
-                    licenza.RemoveLicense();
-                    exitoncalculate = true;
-                    return;
-
-
-                }
-                else if (licenzaInfo.Expire.CompareTo("*") != 0)
-                {
-
-                    try
-                    {
-
-                        String[] substringsExpire = licenzaInfo.Expire.Split(',');
-
-                        licenzaExpire = new DateTime(Int32.Parse(substringsExpire[0].Trim()), Int32.Parse(substringsExpire[1].Trim()), Int32.Parse(substringsExpire[2].Trim()), Int32.Parse(substringsExpire[3].Trim()), Int32.Parse(substringsExpire[4].Trim()), Int32.Parse(substringsExpire[5].Trim()));
+        licenza.RemoveLicense();
+        exitoncalculate = true;
+        return;
 
 
-                        if (DateTime.Compare(licenzaExpire, Server.Time) > 0)
-                        {
+    }
+    else if (licenzaInfo.Expire.CompareTo("*") != 0)
+    {
 
-                            exitoncalculate = false;
+        try
+        {
 
-                        }
-                        else
-                        {
+            String[] substringsExpire = licenzaInfo.Expire.Split(',');
 
-                            
-                            _alertChart("Expired", false);
+            licenzaExpire = new DateTime(Int32.Parse(substringsExpire[0].Trim()), Int32.Parse(substringsExpire[1].Trim()), Int32.Parse(substringsExpire[2].Trim()), Int32.Parse(substringsExpire[3].Trim()), Int32.Parse(substringsExpire[4].Trim()), Int32.Parse(substringsExpire[5].Trim()));
 
-                            licenza.RemoveLicense();
-                            exitoncalculate = true;
-                            return;
 
-                        }
+            if (DateTime.Compare(licenzaExpire, Server.Time) > 0)
+            {
 
-                    }
-                    catch
-                    {
-
-                        _alertChart("Error on check license", false);
-
-                        licenza.RemoveLicense();
-                        exitoncalculate = true;
-                        return;
-
-                    }
-
-                }
+                exitoncalculate = false;
 
             }
-            */
+            else
+            {
+
+
+                _alertChart("Expired", false);
+
+                licenza.RemoveLicense();
+                exitoncalculate = true;
+                return;
+
+            }
+
+        }
+        catch
+        {
+
+            _alertChart("Error on check license", false);
+
+            licenza.RemoveLicense();
+            exitoncalculate = true;
+            return;
+
+        }
+
+    }
+
+}
+*/
+
+            #endregion
+
             try
             {
 
@@ -1326,7 +1332,8 @@ namespace cAlgo
                 if (IsLastBar)
                     canAlert = true;
 
-            } catch (Exception exp)
+            }
+            catch (Exception exp)
             {
 
                 Chart.DrawStaticText("Alert", string.Format("{0} : error, {1}", NAME, exp), VerticalAlignment.Center, API.HorizontalAlignment.Center, Color.Red);
@@ -1630,7 +1637,7 @@ namespace cAlgo
             Bars BarsDaily = MarketData.GetBars(TimeFrame.Daily);
 
             if (BarsDaily.Count < AveragePeriod)
-                return new double[] 
+                return new double[]
                 {
                     0,
                     0,
@@ -1654,7 +1661,7 @@ namespace cAlgo
             double average = Math.Round((total / count) / Symbol.PipSize, 2);
 
             // --> Restituisco il numero di pips
-            return new double[] 
+            return new double[]
             {
                 average,
                 count,
@@ -1662,6 +1669,23 @@ namespace cAlgo
             };
 
         }
+
+        private void _alert(string mymex)
+        {
+
+            if (!canAlert || RunningMode != RunningMode.RealTime)
+                return;
+
+            string mex = string.Format("{0} : {1} {2}", NAME, SymbolName, mymex);
+
+            new Thread(new ThreadStart(delegate { MessageBox.Show(mex, NAME, MessageBoxButtons.OK, MessageBoxIcon.Information); })).Start();
+            Print(mex);
+
+        }
+
+        #endregion
+
+        #region LICENZA & UPDATE : PRIVATE METHOD
 
         private void _checkProductUpdate()
         {
@@ -1671,10 +1695,10 @@ namespace cAlgo
                 return;
 
             // --> Organizzo i dati per la richiesta degli aggiornamenti
-            Guru.API.RequestProductInfo Request = new Guru.API.RequestProductInfo 
+            Guru.API.RequestProductInfo Request = new Guru.API.RequestProductInfo
             {
 
-                MyProduct = new Guru.Product 
+                MyProduct = new Guru.Product
                 {
 
                     ID = ID,
@@ -1711,16 +1735,17 @@ namespace cAlgo
 
         }
 
-        private void _checkLicense()
+        private void _checkLicense(bool bypassread = false)
         {
-                        
-            if (RunningMode != RunningMode.RealTime) return;
-            
+
+            if (RunningMode != RunningMode.RealTime)
+                return;
+
             try
             {
 
                 // --> Controllo la licenza solo dal file
-                licenzaInfo = licenza.GetLicenzaFromFile();
+                if(!bypassread) licenzaInfo = licenza.GetLicenzaFromFile();
 
                 // --> Se non ho il login chiedo di generarlo
                 if (!licenzaInfo.Login)
@@ -1733,7 +1758,7 @@ namespace cAlgo
                 }
                 else
                 {
-                    
+
                     if (licenzaInfo.Product.CompareTo(productName.ToUpper()) != 0)
                     {
 
@@ -1844,10 +1869,19 @@ namespace cAlgo
 
         private void _createButtonLogin()
         {
-            
-            if (RunningMode != RunningMode.RealTime) return;
 
-            StackPanel stackPanel = new StackPanel 
+            if (RunningMode != RunningMode.RealTime)
+                return;
+
+            if (DrawingDialog != null)
+            {
+
+                DrawingDialog.IsVisible = true;
+                return;
+
+            }
+
+            StackPanel stackPanel = new StackPanel
             {
                 VerticalAlignment = VerticalAlignment.Center,
                 HorizontalAlignment = API.HorizontalAlignment.Center,
@@ -1858,7 +1892,7 @@ namespace cAlgo
                 Margin = new Thickness(10, 10, 10, 10)
             };
 
-            Button btnLogin = new Button 
+            Button btnLogin = new Button
             {
                 Text = "CTRADER GURU - LOGIN",
                 BackgroundColor = Color.Red,
@@ -1870,13 +1904,26 @@ namespace cAlgo
             };
             btnLogin.Click += delegate
             {
+                
+                if (!exitoncalculate) return;
 
                 DrawingDialog.IsVisible = false;
-
                 System.Windows.Forms.Application.DoEvents();
-                Thread.Sleep(1000);
 
-                _createLicense();
+                try
+                {
+
+
+                    _createLicense();
+
+                    Initialize();
+                    Calculate(Bars.Count - 1);
+
+                    DrawingDialog.IsVisible = false;
+                    System.Windows.Forms.Application.DoEvents();
+
+                }
+                catch { }
 
             };
 
@@ -1891,11 +1938,20 @@ namespace cAlgo
 
         private void _createLicense()
         {
-            
-            if (RunningMode != RunningMode.RealTime) return;
 
-            // --> Chiedo al server con i cookie
-            licenzaInfo = licenza.GetLicenzaFromServer();
+            if (RunningMode != RunningMode.RealTime)
+                return;
+            
+            // --> Chiedo al server con i cookie, ma prima tento il recupero dal file
+            licenzaInfo = licenza.GetLicenzaFromFile();
+
+            if (licenzaInfo.ErrorProc == -2000) {
+
+                MessageBox.Show("Waiting");
+                return;
+            }
+
+            if(!licenzaInfo.Login || licenzaInfo.ErrorProc != 1000) licenzaInfo = licenza.GetLicenzaFromServer();
 
             // --> Ci sono problemi con i cookie
             if (licenzaInfo.ErrorProc == 2 || licenzaInfo.ErrorProc == 3 || licenzaInfo.Login == false)
@@ -1947,9 +2003,10 @@ namespace cAlgo
                 exitoncalculate = true;
 
             }
-            else {
+            else
+            {
 
-                _checkLicense();
+                _checkLicense(true);
 
             }
 
@@ -1974,19 +2031,6 @@ namespace cAlgo
             Chart.DrawStaticText("alert", mex, VerticalAlignment.Center, API.HorizontalAlignment.Center, Color.Red);
             if (withPrint)
                 Print(mex);
-
-        }
-
-        private void _alert(string mymex)
-        {
-
-            if (!canAlert || RunningMode != RunningMode.RealTime)
-                return;
-
-            string mex = string.Format("{0} : {1} {2}", NAME, SymbolName, mymex);
-
-            new Thread(new ThreadStart(delegate { MessageBox.Show(mex, NAME, MessageBoxButtons.OK, MessageBoxIcon.Information); })).Start();
-            Print(mex);
 
         }
 
@@ -2130,7 +2174,8 @@ namespace Guru
 
                 }
 
-            } catch
+            }
+            catch
             {
 
             }
@@ -2140,7 +2185,7 @@ namespace Guru
             {
 
                 // --> Strutturo le informazioni per la richiesta POST
-                NameValueCollection data = new NameValueCollection 
+                NameValueCollection data = new NameValueCollection
                 {
                     {
                         "account_broker",
@@ -2194,11 +2239,13 @@ namespace Guru
 
                     File.WriteAllText(fileToCheck, JsonConvert.SerializeObject(ProductInfo.LastProduct));
 
-                } catch
+                }
+                catch
                 {
                 }
 
-            } catch (Exception Exp)
+            }
+            catch (Exception Exp)
             {
 
                 // --> Qualcosa è andato storto, registro l'eccezione
