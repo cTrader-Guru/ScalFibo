@@ -340,7 +340,7 @@ namespace cAlgo
                 double lowestLowAfterFirstOpen = (Positions.Length > 0) ? Info.LowestLowAfterFirstOpen : 0;
 
                 // --> Resetto le informazioni
-                Info = new Information
+                Info = new Information 
                 {
 
                     // --> Inizializzo con i vecchi dati
@@ -1024,7 +1024,7 @@ namespace cAlgo
         /// <summary>
         /// La versione del prodotto, progressivo, utilie per controllare gli aggiornamenti se viene reso disponibile sul sito ctrader.guru
         /// </summary>
-        public const string VERSION = "1.1.1";
+        public const string VERSION = "1.1.2";
 
         #endregion
 
@@ -1106,6 +1106,15 @@ namespace cAlgo
         [Parameter("On Strategy Hit?", Group = "Alerts", DefaultValue = false)]
         public bool AlertOnStrategyHit { get; set; }
 
+        [Parameter("Enabled?", Group = "Webhook", DefaultValue = false)]
+        public bool WebhookEnabled { get; set; }
+
+        [Parameter("API", Group = "Webhook", DefaultValue = "https://api.telegram.org/bot[ YOUR TOKEN ]/sendMessage")]
+        public string Webhook { get; set; }
+
+        [Parameter("POST params", Group = "Webhook", DefaultValue = "chat_id=[ @CHATID ]&text={0}")]
+        public string PostParams { get; set; }
+
         /// <summary>
         /// Il Box, lo stile del bordo
         /// </summary>
@@ -1177,7 +1186,7 @@ namespace cAlgo
         private const string ALERTON = "🔔";
         private const string ALERTOFF = "🔕";
 
-        private double[] BodyAverage = new double[]
+        private double[] BodyAverage = new double[] 
         {
             0,
             0,
@@ -1222,7 +1231,7 @@ namespace cAlgo
 
             #region LICENZA : INIT CHECK
 
-            CL_CTG_Licenza.LicenzaConfig licConfig = new CL_CTG_Licenza.LicenzaConfig
+            CL_CTG_Licenza.LicenzaConfig licConfig = new CL_CTG_Licenza.LicenzaConfig 
             {
                 AccountBroker = Account.BrokerName,
                 AcconuntNumber = Account.Number.ToString()
@@ -1261,7 +1270,7 @@ namespace cAlgo
             #region LICENZA LOOP CHECK
 
             // --> Controllo della licenza funzionante al 100% ma lo disabilito per guadagnare risorse
-            /*
+                        /*
 if (RunningMode == RunningMode.RealTime) {
 
     if (licenzaInfo.Expire == null || licenzaInfo.Expire.Length < 1)
@@ -1323,7 +1332,7 @@ if (RunningMode == RunningMode.RealTime) {
 
             #endregion
 
-            try
+try
             {
 
                 _drawLevelFromCustomBar(index);
@@ -1332,8 +1341,7 @@ if (RunningMode == RunningMode.RealTime) {
                 if (IsLastBar)
                     canAlert = true;
 
-            }
-            catch (Exception exp)
+            } catch (Exception exp)
             {
 
                 Chart.DrawStaticText("Alert", string.Format("{0} : error, {1}", NAME, exp), VerticalAlignment.Center, API.HorizontalAlignment.Center, Color.Red);
@@ -1621,7 +1629,8 @@ if (RunningMode == RunningMode.RealTime) {
 
                 info += string.Format(padding + "{0} On Trade Opportunity {1}\r\n", AlertOnOppo ? ALERTON : ALERTOFF, alertHitOnTradeOppo ? YES : NO);
                 info += string.Format(padding + "{0} On Fibonacci Drawing {1}\r\n", AlertOnFibo ? ALERTON : ALERTOFF, alertHitOnFibo ? YES : NO);
-                info += string.Format(padding + "{0} On Strategy Hit {1}\r\n", AlertOnStrategyHit ? ALERTON : ALERTOFF, alertHitOnStrategyHit ? YES : NO);
+                info += string.Format(padding + "{0} On Strategy Hit {1}\r\n\r\n", AlertOnStrategyHit ? ALERTON : ALERTOFF, alertHitOnStrategyHit ? YES : NO);
+                info += string.Format(padding + "{0} To Webhook\r\n", WebhookEnabled ? ALERTON : ALERTOFF);
 
             }
 
@@ -1637,7 +1646,7 @@ if (RunningMode == RunningMode.RealTime) {
             Bars BarsDaily = MarketData.GetBars(TimeFrame.Daily);
 
             if (BarsDaily.Count < AveragePeriod)
-                return new double[]
+                return new double[] 
                 {
                     0,
                     0,
@@ -1661,7 +1670,7 @@ if (RunningMode == RunningMode.RealTime) {
             double average = Math.Round((total / count) / Symbol.PipSize, 2);
 
             // --> Restituisco il numero di pips
-            return new double[]
+            return new double[] 
             {
                 average,
                 count,
@@ -1679,6 +1688,7 @@ if (RunningMode == RunningMode.RealTime) {
             string mex = string.Format("{0} : {1} {2}", NAME, SymbolName, mymex);
 
             new Thread(new ThreadStart(delegate { MessageBox.Show(mex, NAME, MessageBoxButtons.OK, MessageBoxIcon.Information); })).Start();
+            _toWebHook(mex);
             Print(mex);
 
         }
@@ -1695,10 +1705,10 @@ if (RunningMode == RunningMode.RealTime) {
                 return;
 
             // --> Organizzo i dati per la richiesta degli aggiornamenti
-            Guru.API.RequestProductInfo Request = new Guru.API.RequestProductInfo
+            Guru.API.RequestProductInfo Request = new Guru.API.RequestProductInfo 
             {
 
-                MyProduct = new Guru.Product
+                MyProduct = new Guru.Product 
                 {
 
                     ID = ID,
@@ -1745,7 +1755,8 @@ if (RunningMode == RunningMode.RealTime) {
             {
 
                 // --> Controllo la licenza solo dal file
-                if(!bypassread) licenzaInfo = licenza.GetLicenzaFromFile();
+                if (!bypassread)
+                    licenzaInfo = licenza.GetLicenzaFromFile();
 
                 // --> Se non ho il login chiedo di generarlo
                 if (!licenzaInfo.Login)
@@ -1825,8 +1836,7 @@ if (RunningMode == RunningMode.RealTime) {
 
                                     }
 
-                                }
-                                catch
+                                } catch
                                 {
 
                                     if (MessageBox.Show("Expired, remove cookie session?", "Error", MessageBoxButtons.YesNo, MessageBoxIcon.Error) == DialogResult.Yes)
@@ -1851,8 +1861,7 @@ if (RunningMode == RunningMode.RealTime) {
 
                 }
 
-            }
-            catch (Exception exp)
+            } catch (Exception exp)
             {
 
                 MessageBox.Show("Encryption issue, contact support@ctrader.guru", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -1881,7 +1890,7 @@ if (RunningMode == RunningMode.RealTime) {
 
             }
 
-            StackPanel stackPanel = new StackPanel
+            StackPanel stackPanel = new StackPanel 
             {
                 VerticalAlignment = VerticalAlignment.Center,
                 HorizontalAlignment = API.HorizontalAlignment.Center,
@@ -1892,7 +1901,7 @@ if (RunningMode == RunningMode.RealTime) {
                 Margin = new Thickness(10, 10, 10, 10)
             };
 
-            Button btnLogin = new Button
+            Button btnLogin = new Button 
             {
                 Text = "CTRADER GURU - LOGIN",
                 BackgroundColor = Color.Red,
@@ -1904,8 +1913,9 @@ if (RunningMode == RunningMode.RealTime) {
             };
             btnLogin.Click += delegate
             {
-                
-                if (!exitoncalculate) return;
+
+                if (!exitoncalculate)
+                    return;
 
                 DrawingDialog.IsVisible = false;
                 System.Windows.Forms.Application.DoEvents();
@@ -1922,8 +1932,9 @@ if (RunningMode == RunningMode.RealTime) {
                     DrawingDialog.IsVisible = false;
                     System.Windows.Forms.Application.DoEvents();
 
+                } catch
+                {
                 }
-                catch { }
 
             };
 
@@ -1941,17 +1952,19 @@ if (RunningMode == RunningMode.RealTime) {
 
             if (RunningMode != RunningMode.RealTime)
                 return;
-            
+
             // --> Chiedo al server con i cookie, ma prima tento il recupero dal file
             licenzaInfo = licenza.GetLicenzaFromFile();
 
-            if (licenzaInfo.ErrorProc == -2000) {
+            if (licenzaInfo.ErrorProc == -2000)
+            {
 
                 MessageBox.Show("Waiting");
                 return;
             }
 
-            if(!licenzaInfo.Login || licenzaInfo.ErrorProc != 1000) licenzaInfo = licenza.GetLicenzaFromServer();
+            if (!licenzaInfo.Login || licenzaInfo.ErrorProc != 1000)
+                licenzaInfo = licenza.GetLicenzaFromServer();
 
             // --> Ci sono problemi con i cookie
             if (licenzaInfo.ErrorProc == 2 || licenzaInfo.ErrorProc == 3 || licenzaInfo.Login == false)
@@ -2031,6 +2044,48 @@ if (RunningMode == RunningMode.RealTime) {
             Chart.DrawStaticText("alert", mex, VerticalAlignment.Center, API.HorizontalAlignment.Center, Color.Red);
             if (withPrint)
                 Print(mex);
+
+        }
+
+
+
+        public void _toWebHook(string custom)
+        {
+
+            if (!WebhookEnabled || custom == null || custom.Trim().Length < 1)
+                return;
+
+            string messageformat = custom.Trim();
+
+            try
+            {
+                // --> Mi servono i permessi di sicurezza per il dominio, compreso i redirect
+                Uri myuri = new Uri(Webhook);
+
+                string pattern = string.Format("{0}://{1}/.*", myuri.Scheme, myuri.Host);
+
+                // --> Autorizzo tutte le pagine di questo dominio
+                Regex urlRegEx = new Regex(pattern);
+                WebPermission p = new WebPermission(NetworkAccess.Connect, urlRegEx);
+                p.Assert();
+
+                // --> Protocollo di sicurezza https://
+                ServicePointManager.SecurityProtocol = (SecurityProtocolType)192 | (SecurityProtocolType)768 | (SecurityProtocolType)3072;
+
+                using (WebClient wc = new WebClient())
+                {
+                    wc.Headers[HttpRequestHeader.ContentType] = "application/x-www-form-urlencoded";
+                    string HtmlResult = wc.UploadString(myuri, string.Format(PostParams, messageformat));
+                }
+
+            }
+            catch (Exception exc)
+            {
+
+                MessageBox.Show(exc.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                exitoncalculate = true;
+
+            }
 
         }
 
@@ -2174,8 +2229,7 @@ namespace Guru
 
                 }
 
-            }
-            catch
+            } catch
             {
 
             }
@@ -2185,7 +2239,7 @@ namespace Guru
             {
 
                 // --> Strutturo le informazioni per la richiesta POST
-                NameValueCollection data = new NameValueCollection
+                NameValueCollection data = new NameValueCollection 
                 {
                     {
                         "account_broker",
@@ -2239,13 +2293,11 @@ namespace Guru
 
                     File.WriteAllText(fileToCheck, JsonConvert.SerializeObject(ProductInfo.LastProduct));
 
-                }
-                catch
+                } catch
                 {
                 }
 
-            }
-            catch (Exception Exp)
+            } catch (Exception Exp)
             {
 
                 // --> Qualcosa è andato storto, registro l'eccezione
